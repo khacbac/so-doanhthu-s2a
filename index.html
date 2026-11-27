@@ -743,11 +743,7 @@ $('#btnExport').addEventListener('click', () => {
     push_(['', '', sectionTitle(s), '']);
     for (const e of s.items) num([e.soHieu || '', dmy(e.ngay), e.dienGiai], e.soTien || 0);
     num(['', '', `Tổng cộng (${s.no})`], s.total);
-    num(['', '', 'Thuế GTGT'], s.gtgt);
-    num(['', '', 'Thuế TNCN'], s.tncn);
   }
-  num(['', '', 'Tổng số thuế GTGT phải nộp'], m.tG);
-  num(['', '', 'Tổng số thuế TNCN phải nộp'], m.tT);
   push_([]);
   push_(['', '', '', 'Ngày … tháng … năm …']);
   push_(['', '', '', 'NGƯỜI ĐẠI DIỆN HỘ KINH DOANH/ CÁ NHÂN KINH DOANH']);

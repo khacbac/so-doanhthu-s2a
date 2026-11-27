@@ -70,6 +70,7 @@ trang sẽ hiện thông báo và cho bạn chọn:
 ## Lưu ý về thuế
 - Bố cục sổ theo đúng mẫu S2a-HKD trong Thông tư 152/2025/TT-BTC: cột A, B, C, 1; mỗi nhóm ngành có
   *Tổng cộng*, *Thuế GTGT*, *Thuế TNCN*; cuối sổ là tổng thuế phải nộp.
+- File Excel xuất ra chỉ có dòng *Tổng cộng* của từng ngành. Không có các dòng thuế GTGT/TNCN và tổng thuế phải nộp.
 - Tỷ lệ % gợi ý cho từng ngành lấy theo Thông tư 40/2021/TT-BTC. Bạn cần kiểm tra lại với quy định đang áp dụng.
 - Số thuế mặc định = doanh thu × tỷ lệ %. Nếu cơ quan thuế thông báo số khác, nhập số thực tế ở mục
   **Điều chỉnh số thuế phải nộp trong kỳ**.
