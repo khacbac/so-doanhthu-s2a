@@ -1,0 +1,798 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src https://api.github.com; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<title>Sổ doanh thu S2a-HKD</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Tinos:ital,wght@0,400;0,700;1,400&display=swap">
+<style>
+/* Layout: left column = data entry (GitHub, hộ, ngành nghề, dòng doanh thu); right column = the ledger page rendered like the official form, sticky on desktop. */
+:root {
+  --bg: #F3F5F9;
+  --surface: #FFFFFF;
+  --paper: #FFFFFF;
+  --ink: #1A2440;
+  --muted: #5A6480;
+  --rule: #D8DDE8;
+  --rule-strong: #9AA4BC;
+  --accent: #23439E;
+  --accent-ink: #FFFFFF;
+  --accent-soft: #E7ECF9;
+  --margin-red: #B8342F;
+  --ok: #1F7A4D;
+  --warn: #9A5B00;
+  --warn-soft: #FBF1E0;
+  --font-ui: "Be Vietnam Pro", system-ui, "Segoe UI", Roboto, sans-serif;
+  --font-doc: "Tinos", "Times New Roman", Times, serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) { :root {
+  --bg: #0E1320; --surface: #161D2E; --paper: #1A2234; --ink: #E4E8F2; --muted: #9AA3BC;
+  --rule: #2A3450; --rule-strong: #4A5677; --accent: #93AAF2; --accent-ink: #0E1320; --accent-soft: #1F2A48;
+  --margin-red: #E2817A; --ok: #6CCB9A; --warn: #E8B45E; --warn-soft: #2E2615; color-scheme: dark; } }
+
+* { box-sizing: border-box; }
+html { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-ui); font-size: 14px; line-height: 1.5; }
+[hidden] { display: none !important; }
+.wrap { max-width: 1280px; margin: 0 auto; padding-block: 20px 48px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+header.top { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 24px; margin-bottom: 20px; }
+header.top h1 { margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -0.01em; text-wrap: balance; }
+header.top p { margin: 2px 0 0; color: var(--muted); max-width: 62ch; }
+.status { font-size: 12px; color: var(--muted); display: inline-flex; align-items: center; gap: 6px; }
+.status::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--rule-strong); flex: none; }
+.status.ok::before { background: var(--ok); }
+.status.warn::before { background: var(--warn); }
+.status.err::before { background: var(--margin-red); }
+
+.banner { background: var(--warn-soft); border: 1px solid var(--warn); border-radius: 10px; padding: 12px 16px; margin-bottom: 16px; }
+.banner p { margin: 0 0 8px; }
+.banner .row-actions { margin-top: 4px; }
+
+.grid { display: grid; grid-template-columns: minmax(0, 440px) minmax(0, 1fr); gap: 20px; align-items: start; }
+@media (max-width: 920px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+.col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+
+.panel { background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; padding: 16px; min-width: 0; }
+.panel h2, .panel > summary { margin: 0 0 12px; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted);
+  display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+details.panel > summary { cursor: pointer; list-style: none; margin: 0; }
+details.panel > summary::-webkit-details-marker { display: none; }
+details.panel > summary::after { content: "▾"; font-size: 12px; }
+details.panel[open] > summary { margin-bottom: 12px; }
+details.panel[open] > summary::after { content: "▴"; }
+.fields { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px; }
+.fields .full { grid-column: 1 / -1; }
+@media (max-width: 460px) { .fields { grid-template-columns: 1fr; } }
+label.f { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); font-weight: 500; min-width: 0; }
+input, select, textarea { font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--rule); border-radius: 6px; padding: 8px 10px; width: 100%; min-width: 0; }
+input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+input.money { text-align: right; font-variant-numeric: tabular-nums; }
+
+button { font: inherit; cursor: pointer; border-radius: 6px; padding: 8px 14px; border: 1px solid var(--rule-strong); background: var(--surface); color: var(--ink); font-weight: 500; }
+button:hover { border-color: var(--accent); color: var(--accent); }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+button.primary:hover { filter: brightness(1.08); color: var(--accent-ink); }
+button.ghost { border-color: transparent; background: transparent; padding: 4px 8px; color: var(--muted); }
+button.ghost:hover { color: var(--accent); }
+button.danger { color: var(--margin-red); }
+button:disabled { opacity: 0.5; cursor: not-allowed; }
+.row-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 12px; }
+.hint { font-size: 12px; color: var(--muted); margin: 8px 0 0; }
+.hint a { color: var(--accent); }
+.msg { font-size: 12px; margin-top: 8px; min-height: 1em; }
+.msg.err { color: var(--margin-red); }
+.msg.ok { color: var(--ok); }
+
+.groups { display: flex; flex-direction: column; gap: 8px; }
+.grp, .grp-head { display: grid; grid-template-columns: 22px minmax(0, 1fr) 70px 70px 28px; gap: 6px; align-items: center; }
+.grp .no { font-family: var(--font-doc); font-weight: 700; color: var(--muted); text-align: right; }
+.grp input { padding: 6px 8px; }
+.grp input.rate { text-align: right; }
+.grp-head { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+.grp-head span:nth-child(3), .grp-head span:nth-child(4) { text-align: right; }
+.presets { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.chip { font-size: 12px; padding: 4px 10px; border-radius: 999px; border: 1px dashed var(--rule-strong); background: transparent; color: var(--muted); }
+.chip:hover { border-style: solid; }
+
+.period { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; }
+.period select, .period input { width: auto; }
+.period input[type=number] { width: 90px; }
+.seg { display: inline-flex; border: 1px solid var(--rule); border-radius: 6px; overflow: hidden; }
+.seg button { border: 0; border-radius: 0; padding: 7px 12px; background: var(--bg); color: var(--muted); }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+
+.tbl-wrap { overflow-x: auto; margin: 0 -4px; }
+table.entries { width: 100%; border-collapse: collapse; font-size: 13px; }
+table.entries th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); font-weight: 600; padding: 6px 4px; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+table.entries td { padding: 7px 4px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+table.entries td.num, table.entries th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+table.entries td.act { white-space: nowrap; text-align: right; }
+table.entries tr.editing td { background: var(--accent-soft); }
+.tag { font-size: 11px; padding: 1px 6px; border-radius: 4px; background: var(--accent-soft); color: var(--accent); white-space: nowrap; }
+.empty { color: var(--muted); padding: 18px 4px; text-align: center; font-size: 13px; }
+
+.ledger-panel { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 12px); }
+@media (max-width: 920px) { .ledger-panel { position: static; } }
+.ledger-tools { display: flex; flex-wrap: wrap; gap: 8px; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.paper-scroll { overflow-x: auto; border-radius: 4px; }
+.paper { background: var(--paper); color: var(--ink); font-family: var(--font-doc); font-size: 14px; line-height: 1.35;
+  border: 1px solid var(--rule); box-shadow: 0 1px 0 var(--rule), 0 8px 24px -16px rgba(20, 30, 60, 0.35);
+  padding: 28px 28px 32px 44px; min-width: 620px; position: relative; }
+.paper::before { content: ""; position: absolute; top: 0; bottom: 0; left: 28px; width: 1px; background: var(--margin-red); opacity: 0.55; }
+.p-head { display: flex; justify-content: space-between; gap: 24px; }
+.p-head .l div, .p-head .r div { white-space: nowrap; }
+.p-head .r { text-align: center; font-size: 13px; }
+.p-head .r b { font-size: 14px; }
+.p-title { text-align: center; margin: 22px 0 4px; }
+.p-title h3 { margin: 0 0 6px; font-size: 17px; font-weight: 700; letter-spacing: 0.02em; }
+.p-unit { text-align: right; font-style: italic; margin: 8px 0 6px; }
+table.form { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+table.form th, table.form td { border: 1px solid var(--rule-strong); padding: 4px 8px; }
+table.form th { font-weight: 700; text-align: center; }
+table.form tr.letters td { text-align: center; font-style: italic; font-size: 13px; }
+table.form td.n { text-align: right; white-space: nowrap; }
+table.form td.c { text-align: center; white-space: nowrap; }
+table.form tr.grp td, table.form tr.sum td, table.form tr.grand td { font-weight: 700; }
+table.form tr.sum td.lbl, table.form tr.tax td.lbl { text-align: center; }
+table.form tr.tax td { font-style: italic; }
+table.form td.ph { color: var(--muted); }
+.p-sign { display: flex; justify-content: flex-end; margin-top: 18px; }
+.p-sign div { text-align: center; min-width: 300px; }
+.p-sign i { display: block; }
+.p-sign .who { margin-top: 64px; font-weight: 700; }
+
+.tax-adjust { margin-top: 14px; }
+.tax-adjust table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.tax-adjust th { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); text-align: right; padding: 4px; font-weight: 600; }
+.tax-adjust th:first-child { text-align: left; }
+.tax-adjust td { padding: 4px; border-top: 1px solid var(--rule); }
+.tax-adjust td.num { text-align: right; font-variant-numeric: tabular-nums; }
+.tax-adjust input { width: 120px; padding: 5px 8px; text-align: right; font-variant-numeric: tabular-nums; }
+details.more summary { cursor: pointer; color: var(--accent); font-size: 13px; }
+
+@media (prefers-reduced-motion: no-preference) { button, .chip { transition: border-color .15s, color .15s, background .15s; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>Sổ doanh thu bán hàng hóa, dịch vụ</h1>
+      <p>Mẫu số S2a-HKD theo Thông tư 152/2025/TT-BTC, dành cho hộ, cá nhân kinh doanh nộp thuế GTGT và TNCN theo tỷ lệ % trên doanh thu.</p>
+    </div>
+    <span id="status" class="status">Đang mở…</span>
+  </header>
+
+  <div class="banner" id="conflict" hidden>
+    <p id="conflictText"></p>
+    <div class="row-actions">
+      <button type="button" class="primary" id="cfMerge">Gộp hai bản</button>
+      <button type="button" id="cfRemote">Dùng bản trên GitHub</button>
+      <button type="button" id="cfLocal">Ghi đè GitHub bằng bản trên máy này</button>
+    </div>
+    <p class="hint">Gộp: giữ mọi dòng có ở một trong hai bản (dòng đã xóa ở một bên có thể xuất hiện lại). Dùng bản trên GitHub: bỏ các thay đổi chưa lưu trên máy này.</p>
+  </div>
+
+  <div class="grid">
+    <div class="col">
+      <details class="panel" id="ghPanel">
+        <summary>Lưu trữ trên GitHub</summary>
+        <form id="ghForm" class="fields" autocomplete="off">
+          <label class="f">Tài khoản GitHub<input id="gh-owner" placeholder="ten-tai-khoan" required></label>
+          <label class="f">Repo lưu dữ liệu<input id="gh-repo" placeholder="so-s2a-data" required></label>
+          <label class="f">Nhánh<input id="gh-branch" placeholder="main"></label>
+          <label class="f">File dữ liệu<input id="gh-path" placeholder="data.json"></label>
+          <label class="f full">Token truy cập<input id="gh-token" type="password" placeholder="github_pat_…" autocomplete="off" required></label>
+          <div class="full row-actions" style="margin-top:2px">
+            <button type="submit" class="primary" id="ghConnect">Kết nối</button>
+            <button type="button" id="ghSaveNow" hidden>Lưu ngay</button>
+            <button type="button" class="danger" id="ghDisconnect" hidden>Ngắt kết nối</button>
+          </div>
+        </form>
+        <div class="msg" id="ghMsg"></div>
+        <p class="hint">Dùng repo <b>private</b> và token loại <i>fine-grained</i>, chỉ cấp quyền cho đúng repo đó với quyền <i>Contents: Read and write</i>. Token chỉ được lưu trong trình duyệt này. Ngắt kết nối sẽ xóa token khỏi máy. Hướng dẫn tạo token có trong README.</p>
+      </details>
+
+      <section class="panel" aria-labelledby="h-ho">
+        <h2 id="h-ho">Thông tin hộ kinh doanh</h2>
+        <div class="fields" id="profileFields">
+          <label class="f full">Hộ, cá nhân kinh doanh<input id="p-ten" data-k="ten" placeholder="Ví dụ: Hộ kinh doanh Tạp hóa Minh An"></label>
+          <label class="f full">Địa chỉ<input id="p-diaChi" data-k="diaChi"></label>
+          <label class="f">Mã số thuế<input id="p-mst" data-k="mst" inputmode="numeric"></label>
+          <label class="f">Người đại diện<input id="p-daiDien" data-k="daiDien" placeholder="Họ tên để ký sổ"></label>
+          <label class="f full">Địa điểm kinh doanh<input id="p-diaDiem" data-k="diaDiem"></label>
+        </div>
+      </section>
+
+      <section class="panel" aria-labelledby="h-nganh">
+        <h2 id="h-nganh">Ngành nghề và tỷ lệ thuế</h2>
+        <div class="grp-head" id="grpHead"><span></span><span>Tên ngành nghề</span><span>GTGT %</span><span>TNCN %</span><span></span></div>
+        <div class="groups" id="groups"></div>
+        <div class="presets" id="presets"></div>
+        <p class="hint">Bấm một ngành gợi ý ở trên để thêm vào sổ, rồi sửa tên và tỷ lệ ngay trong ô. Mỗi nhóm có cùng tỷ lệ % được ghi thành một phần riêng trong sổ. Tỷ lệ gợi ý lấy theo Thông tư 40/2021/TT-BTC; bạn nên kiểm tra lại với quy định đang áp dụng cho ngành của mình.</p>
+        <div class="msg" id="grpMsg"></div>
+      </section>
+
+      <section class="panel" aria-labelledby="h-ghi">
+        <h2 id="h-ghi"><span id="entryTitle">Ghi một dòng doanh thu</span></h2>
+        <form id="entryForm" class="fields" autocomplete="off">
+          <label class="f">Ngày chứng từ<input id="e-ngay" type="date" required></label>
+          <label class="f">Số hiệu chứng từ<input id="e-soHieu" placeholder="HĐ 0000123"></label>
+          <label class="f full">Ngành nghề<select id="e-nganh" required></select></label>
+          <label class="f full">Diễn giải<input id="e-dienGiai" placeholder="Bán hàng tạp hóa ngày 25/11" required></label>
+          <label class="f full">Số tiền (đồng)<input id="e-soTien" class="money" inputmode="numeric" placeholder="0" required></label>
+          <div class="full row-actions" style="margin-top:2px">
+            <button type="submit" class="primary" id="e-submit">Thêm vào sổ</button>
+            <button type="button" id="e-cancel" hidden>Hủy sửa</button>
+          </div>
+        </form>
+        <div class="msg" id="entryMsg"></div>
+      </section>
+
+      <section class="panel" aria-labelledby="h-list">
+        <h2 id="h-list"><span>Các dòng trong kỳ</span><span id="listCount" style="text-transform:none;letter-spacing:0"></span></h2>
+        <div class="tbl-wrap">
+          <table class="entries">
+            <thead><tr><th>Ngày</th><th>Số CT</th><th>Diễn giải</th><th class="num">Số tiền</th><th></th></tr></thead>
+            <tbody id="entryRows"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel" aria-labelledby="h-backup">
+        <h2 id="h-backup">Sao lưu</h2>
+        <p class="hint" style="margin-top:0">Tải toàn bộ dữ liệu về máy dưới dạng .json, hoặc nhập từ một bản đã tải (kể cả bản tải từ trang trên Claude). Khi nhập, các dòng được gộp vào sổ hiện tại, dòng trùng sẽ được ghi đè.</p>
+        <div class="row-actions">
+          <button type="button" id="btnBackup">Tải bản sao lưu</button>
+          <label class="f" style="flex-direction:row;align-items:center;gap:8px">
+            <span style="font-size:13px;color:var(--ink)">Nhập:</span>
+            <input type="file" id="fileRestore" accept=".json,application/json" style="width:auto;padding:4px">
+          </label>
+        </div>
+        <div class="msg" id="backupMsg"></div>
+      </section>
+    </div>
+
+    <div class="col">
+      <section class="panel ledger-panel" aria-label="Xem trước sổ">
+        <div class="ledger-tools">
+          <div class="period" role="group" aria-label="Kỳ kê khai">
+            <div class="seg" id="ptype">
+              <button type="button" data-t="month" aria-pressed="false">Tháng</button>
+              <button type="button" data-t="quarter" aria-pressed="true">Quý</button>
+              <button type="button" data-t="year" aria-pressed="false">Năm</button>
+            </div>
+            <select id="pn" aria-label="Tháng hoặc quý"></select>
+            <input id="py" type="number" min="2020" max="2100" aria-label="Năm">
+          </div>
+          <button type="button" class="primary" id="btnExport">Xuất file Excel</button>
+        </div>
+        <div class="msg" id="exportMsg" style="margin-top:-6px"></div>
+        <div class="paper-scroll"><div class="paper" id="paper"></div></div>
+
+        <details class="more tax-adjust" id="taxAdjust">
+          <summary>Điều chỉnh số thuế phải nộp trong kỳ</summary>
+          <p class="hint">Mặc định số thuế = doanh thu × tỷ lệ %. Nếu cơ quan thuế thông báo số khác, hoặc bạn được trừ phần doanh thu không chịu thuế, nhập số thực tế vào đây. Để trống thì dùng số tự tính.</p>
+          <table><thead><tr><th>Ngành nghề</th><th>Doanh thu</th><th>Thuế GTGT</th><th>Thuế TNCN</th></tr></thead><tbody id="taxRows"></tbody></table>
+        </details>
+      </section>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+(() => {
+'use strict';
+const $ = (s) => document.querySelector(s);
+const fmt = (n) => (Math.round(Number(n) || 0)).toLocaleString('vi-VN');
+const parseMoney = (s) => { const d = String(s ?? '').replace(/[^\d]/g, ''); return d ? parseInt(d, 10) : 0; };
+const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const el = (tag, props = {}, ...kids) => { const n = document.createElement(tag); for (const [k, v] of Object.entries(props)) { if (k === 'class') n.className = v; else if (k === 'text') n.textContent = v; else if (k.startsWith('on')) n.addEventListener(k.slice(2), v); else n.setAttribute(k, v); } for (const c of kids) if (c != null) n.append(c); return n; };
+const dmy = (iso) => { if (!iso) return ''; const [y, m, d] = iso.split('-'); return `${d}/${m}/${y}`; };
+const pad = (n) => String(n).padStart(2, '0');
+const clone = (o) => JSON.parse(JSON.stringify(o));
+const lsGet = (k) => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch (e) { return null; } };
+const lsSet = (k, v) => { try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
+
+const PRESETS = [
+  { name: 'Phân phối, cung cấp hàng hóa', gtgt: 1, tncn: 0.5 },
+  { name: 'Dịch vụ, xây dựng không bao thầu nguyên vật liệu', gtgt: 5, tncn: 2 },
+  { name: 'Sản xuất, vận tải, dịch vụ gắn với hàng hóa, xây dựng có bao thầu nguyên vật liệu', gtgt: 3, tncn: 1.5 },
+  { name: 'Hoạt động kinh doanh khác', gtgt: 2, tncn: 1 },
+  { name: 'Cho thuê tài sản', gtgt: 5, tncn: 5 },
+];
+
+/* ================= state & local cache ================= */
+const CACHE_KEY = 's2a-hkd-v1', CFG_KEY = 's2a-gh-config', META_KEY = 's2a-gh-meta';
+const blank = () => ({ profile: { ten: '', diaChi: '', mst: '', diaDiem: '', daiDien: '' }, groups: [], overrides: {}, entries: [] });
+let S = blank();
+let cfg = lsGet(CFG_KEY) || { owner: '', repo: '', branch: 'main', path: 'data.json', token: '' };
+let meta = lsGet(META_KEY) || { sha: null, dirty: false, savedAt: null };
+const connected = () => !!(cfg.owner && cfg.repo && cfg.token);
+
+function normalize(d) {
+  const b = blank(); d = d || {};
+  return {
+    profile: { ...b.profile, ...(d.profile || {}) },
+    groups: Array.isArray(d.groups) ? d.groups.filter((g) => g && g.id).map((g) => ({ id: String(g.id), name: String(g.name || ''), gtgt: Number(g.gtgt) || 0, tncn: Number(g.tncn) || 0 })) : [],
+    overrides: d.overrides && typeof d.overrides === 'object' ? d.overrides : {},
+    entries: Array.isArray(d.entries) ? d.entries.filter((e) => e && e.id && e.ngay).map((e) => ({ id: String(e.id), ngay: String(e.ngay), soHieu: String(e.soHieu || ''), nganh: String(e.nganh || ''), dienGiai: String(e.dienGiai || ''), soTien: parseMoney(e.soTien) })) : [],
+  };
+}
+const payload = () => ({ app: 's2a-hkd', version: 1, savedAt: new Date().toISOString(), profile: S.profile, groups: S.groups, overrides: S.overrides, entries: S.entries });
+const isEmpty = (d) => !d.entries.length && !d.groups.length && !Object.values(d.profile).some(Boolean);
+const sameData = (a, b) => JSON.stringify(normalize(a)) === JSON.stringify(normalize(b));
+
+function setStatus(text, cls) { const s = $('#status'); s.textContent = text; s.className = 'status ' + (cls || ''); }
+function saveMeta() { lsSet(META_KEY, meta); }
+
+/* Every change goes through here: cache locally, mark dirty, schedule a GitHub save. */
+let pushTimer = null;
+function changed(delay = 4000) {
+  lsSet(CACHE_KEY, S);
+  meta.dirty = true; saveMeta();
+  if (connected()) { setStatus('Có thay đổi chưa lưu lên GitHub', 'warn'); clearTimeout(pushTimer); pushTimer = setTimeout(() => push(), delay); }
+  else setStatus('Chưa kết nối GitHub · dữ liệu đang lưu trên trình duyệt này', 'warn');
+}
+
+/* ================= GitHub API ================= */
+const b64enc = (s) => { const bytes = new TextEncoder().encode(s); let bin = ''; for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000)); return btoa(bin); };
+const b64dec = (b) => { const bin = atob(String(b).replace(/\s/g, '')); const bytes = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i); return new TextDecoder().decode(bytes); };
+const enc = encodeURIComponent;
+function ghUrl(rest) { return `https://api.github.com/repos/${enc(cfg.owner)}/${enc(cfg.repo)}${rest}`; }
+function contentsUrl() { return ghUrl('/contents/' + (cfg.path || 'data.json').split('/').map(enc).join('/')); }
+async function gh(url, opts = {}) {
+  let res;
+  try {
+    res = await fetch(url, { ...opts, cache: 'no-store', headers: { Authorization: `Bearer ${cfg.token}`, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28', ...(opts.body ? { 'Content-Type': 'application/json' } : {}) } });
+  } catch (e) { const err = new Error('Không kết nối được tới GitHub. Kiểm tra mạng rồi thử lại.'); err.kind = 'network'; throw err; }
+  return res;
+}
+function httpError(res, ctx) {
+  const m = {
+    401: 'Token không hợp lệ hoặc đã hết hạn. Tạo token mới rồi kết nối lại.',
+    403: 'Token không có quyền ghi vào repo này. Kiểm tra quyền "Contents: Read and write".',
+    404: ctx === 'repo' ? 'Không tìm thấy repo. Kiểm tra tên tài khoản, tên repo, và token đã được cấp quyền cho repo này chưa.' : 'Không tìm thấy nhánh hoặc file. Kiểm tra tên nhánh.',
+  };
+  const err = new Error(m[res.status] || `GitHub báo lỗi ${res.status}. Thử lại sau.`); err.status = res.status; return err;
+}
+async function checkRepo() { const r = await gh(ghUrl('')); if (!r.ok) throw httpError(r, 'repo'); const j = await r.json(); return j; }
+async function pull() {
+  const r = await gh(contentsUrl() + '?ref=' + enc(cfg.branch || 'main'));
+  if (r.status === 404) return { data: null, sha: null };
+  if (!r.ok) throw httpError(r, 'file');
+  const j = await r.json();
+  let text = j.content ? b64dec(j.content) : '';
+  if (!text && j.size > 0) { // files over 1 MB come without content; read the blob instead
+    const b = await gh(ghUrl('/git/blobs/' + j.sha)); if (!b.ok) throw httpError(b, 'file');
+    text = b64dec((await b.json()).content);
+  }
+  let data = null;
+  try { data = text ? JSON.parse(text) : null; } catch (e) { const err = new Error(`File ${cfg.path} trên GitHub không phải JSON hợp lệ. Hãy sửa hoặc xóa file đó.`); throw err; }
+  return { data, sha: j.sha };
+}
+
+let pushing = false, pushAgain = false;
+async function push(force) {
+  if (!connected()) return;
+  if (!$('#conflict').hidden && !force) return;
+  if (pushing) { pushAgain = true; return; }
+  clearTimeout(pushTimer);
+  pushing = true; setStatus('Đang lưu lên GitHub…', '');
+  try {
+    const body = { message: `Cập nhật sổ S2a (${new Date().toLocaleString('vi-VN')})`, content: b64enc(JSON.stringify(payload(), null, 1)), branch: cfg.branch || 'main' };
+    if (meta.sha) body.sha = meta.sha;
+    const r = await gh(contentsUrl(), { method: 'PUT', body: JSON.stringify(body) });
+    if (r.status === 409 || r.status === 422) { pushing = false; await handleRemoteChanged(); return; }
+    if (!r.ok) throw httpError(r, 'file');
+    const j = await r.json();
+    meta.sha = j.content.sha; meta.dirty = false; meta.savedAt = new Date().toISOString(); saveMeta();
+    setStatus('Đã lưu lên GitHub lúc ' + new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }), 'ok');
+  } catch (e) {
+    setStatus(e.message || 'Chưa lưu được lên GitHub', 'err');
+  } finally {
+    pushing = false;
+    if (pushAgain) { pushAgain = false; push(); }
+  }
+}
+
+/* ================= conflict handling ================= */
+let remoteCopy = null;
+async function handleRemoteChanged() {
+  try {
+    const { data, sha } = await pull();
+    if (!data) { meta.sha = null; saveMeta(); return push(true); }
+    if (sameData(data, S)) { meta.sha = sha; meta.dirty = false; saveMeta(); setStatus('Đã đồng bộ với GitHub', 'ok'); return; }
+    remoteCopy = { data: normalize(data), sha };
+    $('#conflictText').textContent = 'Dữ liệu trên GitHub đã được sửa từ nơi khác (máy khác hoặc trình duyệt khác), trong khi máy này cũng có thay đổi chưa lưu. Chọn cách xử lý:';
+    $('#conflict').hidden = false;
+    setStatus('Cần chọn cách đồng bộ', 'err');
+  } catch (e) { setStatus(e.message, 'err'); }
+}
+function mergeData(local, remote) {
+  const byId = (a, b) => { const m = new Map(); for (const x of a) m.set(x.id, x); for (const x of b) m.set(x.id, x); return [...m.values()]; };
+  const prof = { ...remote.profile }; for (const [k, v] of Object.entries(local.profile)) if (v) prof[k] = v;
+  const ov = clone(remote.overrides); for (const [k, v] of Object.entries(local.overrides || {})) ov[k] = { ...(ov[k] || {}), ...v };
+  return { profile: prof, groups: byId(remote.groups, local.groups), overrides: ov, entries: byId(remote.entries, local.entries) };
+}
+function resolve(kind) {
+  if (!remoteCopy) return;
+  $('#conflict').hidden = true;
+  meta.sha = remoteCopy.sha;
+  if (kind === 'remote') { S = remoteCopy.data; lsSet(CACHE_KEY, S); meta.dirty = false; saveMeta(); setStatus('Đã dùng bản trên GitHub', 'ok'); }
+  else { if (kind === 'merge') S = mergeData(normalize(S), remoteCopy.data); lsSet(CACHE_KEY, S); meta.dirty = true; saveMeta(); push(true); }
+  remoteCopy = null; groupsSig = ''; resetForm(true); renderAll();
+}
+$('#cfMerge').addEventListener('click', () => resolve('merge'));
+$('#cfRemote').addEventListener('click', () => resolve('remote'));
+$('#cfLocal').addEventListener('click', () => resolve('local'));
+
+/* ================= connect / startup ================= */
+function renderGh() {
+  $('#gh-owner').value = cfg.owner; $('#gh-repo').value = cfg.repo; $('#gh-branch').value = cfg.branch || 'main'; $('#gh-path').value = cfg.path || 'data.json';
+  $('#gh-token').value = cfg.token ? '••••••••••••' : ''; $('#gh-token').dataset.saved = cfg.token ? '1' : '';
+  $('#ghConnect').textContent = connected() ? 'Kết nối lại' : 'Kết nối';
+  $('#ghSaveNow').hidden = !connected(); $('#ghDisconnect').hidden = !connected();
+  $('#ghPanel').open = !connected();
+}
+async function syncFromRemote(firstConnect) {
+  setStatus('Đang tải từ GitHub…', '');
+  const { data, sha } = await pull();
+  if (!data) { meta.sha = null; saveMeta(); if (!isEmpty(S)) { meta.dirty = true; saveMeta(); await push(true); } else setStatus('Đã kết nối GitHub · sổ đang trống', 'ok'); return; }
+  const remote = normalize(data);
+  if (sameData(remote, S)) { meta.sha = sha; meta.dirty = false; saveMeta(); setStatus('Đã đồng bộ với GitHub', 'ok'); return; }
+  const localUnsynced = firstConnect ? !isEmpty(S) : (meta.dirty && sha !== meta.sha);
+  if (!localUnsynced) {
+    if (!firstConnect && meta.dirty && sha === meta.sha) { await push(true); return; } // remote unchanged since our last save: just save ours
+    S = remote; meta.sha = sha; meta.dirty = false; lsSet(CACHE_KEY, S); saveMeta(); groupsSig = ''; renderAll();
+    setStatus('Đã tải dữ liệu từ GitHub', 'ok'); return;
+  }
+  remoteCopy = { data: remote, sha };
+  $('#conflictText').textContent = firstConnect
+    ? 'Repo đã có dữ liệu sổ, và trình duyệt này cũng có dữ liệu. Chọn cách xử lý:'
+    : 'Dữ liệu trên GitHub đã được sửa từ nơi khác, trong khi máy này cũng có thay đổi chưa lưu. Chọn cách xử lý:';
+  $('#conflict').hidden = false; setStatus('Cần chọn cách đồng bộ', 'err');
+}
+$('#ghForm').addEventListener('submit', async (ev) => {
+  ev.preventDefault();
+  const msg = $('#ghMsg'); msg.className = 'msg'; msg.textContent = 'Đang kiểm tra…';
+  const tokInput = $('#gh-token').value.trim();
+  const next = { owner: $('#gh-owner').value.trim(), repo: $('#gh-repo').value.trim(), branch: $('#gh-branch').value.trim() || 'main', path: ($('#gh-path').value.trim() || 'data.json').replace(/^\/+/, ''),
+    token: $('#gh-token').dataset.saved && tokInput === '••••••••••••' ? cfg.token : tokInput };
+  const prev = cfg; const firstConnect = !connected() || prev.owner !== next.owner || prev.repo !== next.repo || prev.path !== next.path || prev.branch !== next.branch;
+  cfg = next;
+  try {
+    const repo = await checkRepo();
+    if (!repo.private) { msg.className = 'msg err'; msg.textContent = 'Repo này đang public: ai cũng đọc được doanh thu và mã số thuế của bạn. Hãy chuyển repo sang private rồi kết nối lại.'; cfg = prev; return; }
+    if (repo.permissions && repo.permissions.push === false) { msg.className = 'msg err'; msg.textContent = 'Token chỉ có quyền đọc repo này. Cần quyền "Contents: Read and write".'; cfg = prev; return; }
+    lsSet(CFG_KEY, cfg);
+    if (firstConnect) { meta = { sha: null, dirty: false, savedAt: null }; saveMeta(); }
+    renderGh(); msg.className = 'msg ok'; msg.textContent = `Đã kết nối ${cfg.owner}/${cfg.repo}.`;
+    await syncFromRemote(firstConnect);
+  } catch (e) { cfg = prev; msg.className = 'msg err'; msg.textContent = e.message; }
+});
+$('#ghSaveNow').addEventListener('click', () => { meta.dirty = true; saveMeta(); push(); });
+let discArmed = null;
+$('#ghDisconnect').addEventListener('click', (ev) => {
+  const b = ev.currentTarget;
+  if (!discArmed) { b.textContent = meta.dirty ? 'Còn thay đổi chưa lưu, bấm lần nữa để vẫn ngắt' : 'Bấm lần nữa để ngắt'; discArmed = setTimeout(() => { discArmed = null; b.textContent = 'Ngắt kết nối'; }, 4000); return; }
+  clearTimeout(discArmed); discArmed = null; b.textContent = 'Ngắt kết nối';
+  cfg = { ...cfg, token: '' }; lsSet(CFG_KEY, cfg); clearTimeout(pushTimer);
+  renderGh(); $('#ghMsg').className = 'msg ok'; $('#ghMsg').textContent = 'Đã xóa token khỏi trình duyệt này. Dữ liệu trên GitHub vẫn còn.';
+  setStatus('Chưa kết nối GitHub · dữ liệu đang lưu trên trình duyệt này', 'warn');
+});
+window.addEventListener('beforeunload', (e) => { if (connected() && meta.dirty) { push(); e.preventDefault(); e.returnValue = ''; } });
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden' && connected() && meta.dirty) push(); });
+
+/* ================= period ================= */
+const today = new Date();
+let P = { type: 'quarter', year: today.getFullYear(), n: Math.floor(today.getMonth() / 3) + 1 };
+function range() {
+  const y = P.year;
+  if (P.type === 'month') return [`${y}-${pad(P.n)}-01`, `${y}-${pad(P.n)}-31`];
+  if (P.type === 'quarter') { const m1 = (P.n - 1) * 3 + 1; return [`${y}-${pad(m1)}-01`, `${y}-${pad(m1 + 2)}-31`]; }
+  return [`${y}-01-01`, `${y}-12-31`];
+}
+function periodLabel() { return P.type === 'month' ? `Tháng ${P.n} năm ${P.year}` : P.type === 'quarter' ? `Quý ${P.n} năm ${P.year}` : `Năm ${P.year}`; }
+function periodKey() { return `${P.type}-${P.year}-${P.type === 'year' ? 0 : P.n}`; }
+function periodFile() { return P.type === 'month' ? `T${pad(P.n)}-${P.year}` : P.type === 'quarter' ? `Q${P.n}-${P.year}` : `${P.year}`; }
+function inPeriod() { const [a, b] = range(); return S.entries.filter((e) => e.ngay >= a && e.ngay <= b).sort((x, y) => (x.ngay + (x.soHieu || '')).localeCompare(y.ngay + (y.soHieu || ''))); }
+function renderPeriod() {
+  document.querySelectorAll('#ptype button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.t === P.type)));
+  const pn = $('#pn'); pn.hidden = P.type === 'year';
+  const count = P.type === 'month' ? 12 : 4; const want = `${P.type}-${count}`;
+  if (pn.dataset.built !== want) { pn.replaceChildren(...Array.from({ length: count }, (_, i) => el('option', { value: i + 1, text: (P.type === 'month' ? 'Tháng ' : 'Quý ') + (i + 1) }))); pn.dataset.built = want; }
+  pn.value = String(P.n); $('#py').value = P.year;
+}
+$('#ptype').addEventListener('click', (ev) => {
+  const t = ev.target.closest('button'); if (!t) return;
+  const prev = P.type; P.type = t.dataset.t;
+  if (prev === 'month' && P.type === 'quarter') P.n = Math.ceil(P.n / 3);
+  else if (prev === 'quarter' && P.type === 'month') P.n = (P.n - 1) * 3 + 1;
+  else if (P.type !== 'year' && prev === 'year') P.n = P.type === 'month' ? today.getMonth() + 1 : Math.floor(today.getMonth() / 3) + 1;
+  renderAll();
+});
+$('#pn').addEventListener('change', (e) => { P.n = +e.target.value; renderAll(); });
+$('#py').addEventListener('change', (e) => { const v = parseInt(e.target.value, 10); if (v > 1999 && v < 2101) { P.year = v; renderAll(); } });
+
+/* ================= profile ================= */
+function renderProfile() { document.querySelectorAll('#profileFields input').forEach((i) => { if (document.activeElement !== i) i.value = S.profile[i.dataset.k] || ''; }); }
+$('#profileFields').addEventListener('input', (e) => { const k = e.target.dataset.k; if (!k) return; S.profile[k] = e.target.value; renderLedger(); changed(); });
+
+/* ================= groups ================= */
+let groupsSig = '';
+function groupLabel(g, i) { return `${i + 1}. ${g.name || 'Ngành nghề'}`; }
+function renderGroups(force) {
+  const box = $('#groups');
+  const sig = JSON.stringify(S.groups);
+  if (!force && sig === groupsSig) return;
+  if (!force && box.contains(document.activeElement)) return;
+  groupsSig = sig;
+  $('#grpHead').hidden = S.groups.length === 0;
+  box.replaceChildren(...S.groups.map((g, i) => {
+    const name = el('input', { id: 'g-name-' + g.id, 'aria-label': 'Tên ngành nghề ' + (i + 1) }); name.value = g.name;
+    const r1 = el('input', { id: 'g-gtgt-' + g.id, class: 'rate', inputmode: 'decimal', 'aria-label': 'Tỷ lệ GTGT %' }); r1.value = g.gtgt;
+    const r2 = el('input', { id: 'g-tncn-' + g.id, class: 'rate', inputmode: 'decimal', 'aria-label': 'Tỷ lệ TNCN %' }); r2.value = g.tncn;
+    const upd = () => { g.name = name.value; g.gtgt = parseFloat(String(r1.value).replace(',', '.')) || 0; g.tncn = parseFloat(String(r2.value).replace(',', '.')) || 0; groupsSig = JSON.stringify(S.groups); renderEntrySelect(); renderLedger(); changed(); };
+    [name, r1, r2].forEach((x) => x.addEventListener('input', upd));
+    const del = el('button', { type: 'button', class: 'ghost danger', title: 'Xóa ngành nghề', 'aria-label': 'Xóa ngành nghề ' + (i + 1), text: '✕' });
+    del.addEventListener('click', () => {
+      const gm = $('#grpMsg');
+      if (S.entries.some((e) => e.nganh === g.id)) { gm.className = 'msg err'; gm.textContent = `Ngành "${g.name}" đang có dòng doanh thu. Hãy chuyển hoặc xóa các dòng đó trước.`; return; }
+      gm.textContent = '';
+      S.groups = S.groups.filter((x) => x.id !== g.id); renderGroups(true); renderEntrySelect(); renderLedger(); changed(1500);
+    });
+    return el('div', { class: 'grp' }, el('span', { class: 'no', text: String(i + 1) }), name, r1, r2, del);
+  }));
+  const have = new Set(S.groups.map((g) => g.name));
+  $('#presets').replaceChildren(...PRESETS.filter((p) => !have.has(p.name)).map((p) =>
+    el('button', { type: 'button', class: 'chip', text: `+ ${p.name} (${String(p.gtgt).replace('.', ',')}% · ${String(p.tncn).replace('.', ',')}%)`, onclick: () => addGroup(p) })),
+    el('button', { type: 'button', class: 'chip', text: '+ Ngành khác', onclick: () => addGroup({ name: '', gtgt: 0, tncn: 0 }) }));
+}
+function addGroup(p) {
+  const g = { id: 'g' + newId(), name: p.name, gtgt: p.gtgt, tncn: p.tncn };
+  S.groups = [...S.groups, g];
+  const gm = $('#grpMsg'); gm.className = 'msg ok';
+  gm.textContent = p.name ? `Đã thêm ngành "${p.name}". Bạn có thể sửa tên và tỷ lệ ngay trong ô.` : 'Nhập tên ngành và tỷ lệ % vào dòng mới.';
+  renderGroups(true); renderEntrySelect(); renderLedger(); changed(1500);
+  if (!p.name) setTimeout(() => { const n = document.getElementById('g-name-' + g.id); if (n) n.focus(); }, 0);
+}
+
+/* ================= entry form ================= */
+let editingId = null;
+function renderEntrySelect() {
+  const sel = $('#e-nganh'); const cur = sel.value;
+  if (!S.groups.length) { sel.replaceChildren(el('option', { value: '', text: 'Thêm ngành nghề ở phần trên trước' })); sel.disabled = true; $('#e-submit').disabled = true; return; }
+  sel.disabled = false; $('#e-submit').disabled = false;
+  sel.replaceChildren(...S.groups.map((g, i) => el('option', { value: g.id, text: groupLabel(g, i) })));
+  if (S.groups.some((g) => g.id === cur)) sel.value = cur;
+}
+$('#e-soTien').addEventListener('input', (e) => { const v = parseMoney(e.target.value); e.target.value = v ? fmt(v) : ''; });
+function resetForm(keepDate) {
+  editingId = null;
+  const d = $('#e-ngay').value;
+  $('#entryForm').reset();
+  $('#e-ngay').value = keepDate && d ? d : `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
+  $('#e-submit').textContent = 'Thêm vào sổ'; $('#e-cancel').hidden = true; $('#entryTitle').textContent = 'Ghi một dòng doanh thu';
+  renderEntrySelect(); renderEntries();
+}
+$('#e-cancel').addEventListener('click', () => resetForm(true));
+$('#entryForm').addEventListener('submit', (ev) => {
+  ev.preventDefault();
+  const msg = $('#entryMsg');
+  const e = { id: editingId || 'e' + newId(), ngay: $('#e-ngay').value, soHieu: $('#e-soHieu').value.trim(), nganh: $('#e-nganh').value, dienGiai: $('#e-dienGiai').value.trim(), soTien: parseMoney($('#e-soTien').value) };
+  if (!e.ngay || !e.nganh || !e.dienGiai) { msg.className = 'msg err'; msg.textContent = 'Cần có ngày, ngành nghề và diễn giải.'; return; }
+  if (!e.soTien) { msg.className = 'msg err'; msg.textContent = 'Số tiền phải lớn hơn 0.'; return; }
+  const was = editingId;
+  const i = S.entries.findIndex((x) => x.id === e.id);
+  S.entries = i >= 0 ? S.entries.map((x) => (x.id === e.id ? e : x)) : [...S.entries, e];
+  changed();
+  msg.className = 'msg ok'; msg.textContent = was ? 'Đã cập nhật dòng.' : `Đã thêm ${fmt(e.soTien)} đ vào sổ.`;
+  const [a, b] = range(); if (e.ngay < a || e.ngay > b) msg.textContent += ' Dòng này nằm ngoài kỳ đang xem.';
+  resetForm(true); renderLedger(); $('#e-nganh').value = e.nganh; $('#e-dienGiai').focus();
+});
+function renderEntries() {
+  const rows = inPeriod();
+  const tb = $('#entryRows');
+  $('#listCount').textContent = `${periodLabel()} · ${rows.length} dòng`;
+  if (!rows.length) { tb.replaceChildren(el('tr', {}, el('td', { colspan: '5', class: 'empty', text: 'Chưa có dòng nào trong kỳ này. Nhập ở ô "Ghi một dòng doanh thu" phía trên.' }))); return; }
+  const gi = new Map(S.groups.map((g, i) => [g.id, i]));
+  tb.replaceChildren(...rows.map((e) => {
+    const i = gi.get(e.nganh);
+    const del = el('button', { type: 'button', class: 'ghost danger', text: 'Xóa' });
+    let armed = null;
+    del.addEventListener('click', () => {
+      if (!armed) { del.textContent = 'Bấm lần nữa để xóa'; armed = setTimeout(() => { armed = null; del.textContent = 'Xóa'; }, 3000); return; }
+      clearTimeout(armed);
+      S.entries = S.entries.filter((x) => x.id !== e.id); changed();
+      if (editingId === e.id) resetForm(true); else renderEntries();
+      renderLedger();
+    });
+    const edit = el('button', { type: 'button', class: 'ghost', text: 'Sửa', onclick: () => {
+      editingId = e.id; $('#e-ngay').value = e.ngay; $('#e-soHieu').value = e.soHieu || ''; renderEntrySelect(); $('#e-nganh').value = e.nganh;
+      $('#e-dienGiai').value = e.dienGiai; $('#e-soTien').value = fmt(e.soTien);
+      $('#e-submit').textContent = 'Lưu thay đổi'; $('#e-cancel').hidden = false; $('#entryTitle').textContent = 'Sửa dòng doanh thu';
+      $('#entryMsg').textContent = ''; renderEntries(); $('#e-dienGiai').focus();
+    } });
+    return el('tr', { class: editingId === e.id ? 'editing' : '' },
+      el('td', { text: dmy(e.ngay).slice(0, 5) }),
+      el('td', { text: e.soHieu || '' }),
+      el('td', {}, el('div', { text: e.dienGiai }), el('span', { class: 'tag', text: i != null ? 'Ngành ' + (i + 1) : 'Chưa có ngành' })),
+      el('td', { class: 'num', text: fmt(e.soTien) }),
+      el('td', { class: 'act' }, edit, del));
+  }));
+}
+
+/* ================= ledger ================= */
+function ledgerModel() {
+  const rows = inPeriod();
+  const ov = (S.overrides || {})[periodKey()] || {};
+  let gs = S.groups.map((g) => ({ g, items: rows.filter((e) => e.nganh === g.id) }));
+  const hasAny = gs.some((x) => x.items.length);
+  if (hasAny) gs = gs.filter((x) => x.items.length);
+  let tG = 0, tT = 0;
+  const sections = gs.map((x, k) => {
+    const total = x.items.reduce((s, e) => s + (e.soTien || 0), 0);
+    const autoG = Math.round(total * (x.g.gtgt || 0) / 100), autoT = Math.round(total * (x.g.tncn || 0) / 100);
+    const o = ov[x.g.id] || {};
+    const gtgt = Number.isFinite(o.gtgt) ? o.gtgt : autoG, tncn = Number.isFinite(o.tncn) ? o.tncn : autoT;
+    tG += gtgt; tT += tncn;
+    return { no: k + 1, g: x.g, items: x.items, total, gtgt, tncn, autoG, autoT, o };
+  });
+  return { sections, tG, tT, empty: !hasAny };
+}
+const rateTxt = (v) => String(v ?? 0).replace('.', ',') + '%';
+const sectionTitle = (s) => `${s.no}. Ngành nghề: ${s.g.name || '…'} (GTGT ${rateTxt(s.g.gtgt)}, TNCN ${rateTxt(s.g.tncn)})`;
+function renderLedger() {
+  const m = ledgerModel(); const p = S.profile;
+  const dots = (v, n) => v ? v : '.'.repeat(n);
+  const head = el('div', { class: 'p-head' },
+    el('div', { class: 'l' },
+      el('div', {}, el('b', { text: 'HỘ, CÁ NHÂN KINH DOANH: ' }), document.createTextNode(dots(p.ten, 20))),
+      el('div', { text: 'Địa chỉ: ' + dots(p.diaChi, 30) }),
+      el('div', { text: 'Mã số thuế: ' + dots(p.mst, 24) })),
+    el('div', { class: 'r' }, el('div', {}, el('b', { text: 'Mẫu số S2a-HKD' })),
+      el('div', { text: '(Kèm theo Thông tư số 152/2025/TT-BTC' }), el('div', { text: 'ngày 31 tháng 12 năm 2025 của Bộ trưởng' }), el('div', { text: 'Bộ Tài chính)' })));
+  const title = el('div', { class: 'p-title' }, el('h3', { text: 'SỔ DOANH THU BÁN HÀNG HÓA, DỊCH VỤ' }),
+    el('div', { text: 'Địa điểm kinh doanh: ' + dots(p.diaDiem, 26) }), el('div', { text: 'Kỳ kê khai: ' + periodLabel() }));
+  const unit = el('div', { class: 'p-unit', text: 'Đơn vị tính: đồng' });
+  const t = el('table', { class: 'form' });
+  t.append(el('colgroup', {}, el('col', { style: 'width:14%' }), el('col', { style: 'width:13%' }), el('col'), el('col', { style: 'width:20%' })));
+  t.append(el('thead', {},
+    el('tr', {}, el('th', { colspan: '2', text: 'Chứng từ' }), el('th', { rowspan: '2', text: 'Diễn giải' }), el('th', { rowspan: '2', text: 'Số tiền' })),
+    el('tr', {}, el('th', { text: 'Số hiệu' }), el('th', { text: 'Ngày, tháng' }))));
+  const tb = el('tbody');
+  tb.append(el('tr', { class: 'letters' }, el('td', { text: 'A' }), el('td', { text: 'B' }), el('td', { text: 'C' }), el('td', { text: '1' })));
+  const row = (cls, a, b, c, d, extra = {}) => el('tr', { class: cls }, el('td', { class: 'c', text: a }), el('td', { class: 'c', text: b }), el('td', { class: extra.cCls || '', text: c }), el('td', { class: 'n', text: d }));
+  if (!m.sections.length) {
+    tb.append(row('grp', '', '', '1. Ngành nghề…', ''), row('', '', '', '…', '', { cCls: 'ph' }), row('sum', '', '', 'Tổng cộng (1)', '', { cCls: 'lbl' }),
+      row('tax', '', '', 'Thuế GTGT', '', { cCls: 'lbl' }), row('tax', '', '', 'Thuế TNCN', '', { cCls: 'lbl' }));
+  }
+  for (const s of m.sections) {
+    tb.append(row('grp', '', '', sectionTitle(s), ''));
+    if (!s.items.length) tb.append(row('', '', '', '…', '', { cCls: 'ph' }));
+    for (const e of s.items) tb.append(row('', e.soHieu || '', dmy(e.ngay), e.dienGiai, fmt(e.soTien)));
+    tb.append(row('sum', '', '', `Tổng cộng (${s.no})`, fmt(s.total), { cCls: 'lbl' }));
+    tb.append(row('tax', '', '', 'Thuế GTGT', fmt(s.gtgt), { cCls: 'lbl' }));
+    tb.append(row('tax', '', '', 'Thuế TNCN', fmt(s.tncn), { cCls: 'lbl' }));
+  }
+  tb.append(row('grand', '', '', 'Tổng số thuế GTGT phải nộp', fmt(m.tG)));
+  tb.append(row('grand', '', '', 'Tổng số thuế TNCN phải nộp', fmt(m.tT)));
+  t.append(tb);
+  const sign = el('div', { class: 'p-sign' }, el('div', {},
+    el('i', { text: 'Ngày … tháng … năm …' }), el('b', { text: 'NGƯỜI ĐẠI DIỆN HỘ KINH DOANH/' }), el('br'), el('b', { text: 'CÁ NHÂN KINH DOANH' }),
+    el('i', { text: '(Ký, ghi rõ họ tên, đóng dấu (nếu có))' }), el('div', { class: 'who', text: p.daiDien || '' })));
+  $('#paper').replaceChildren(head, title, unit, t, sign);
+  renderTaxAdjust(m);
+}
+function renderTaxAdjust(m) {
+  const tb = $('#taxRows');
+  if (tb.contains(document.activeElement)) return;
+  if (!m.sections.length || m.empty) { tb.replaceChildren(el('tr', {}, el('td', { colspan: '4', class: 'empty', text: 'Kỳ này chưa có doanh thu.' }))); return; }
+  tb.replaceChildren(...m.sections.map((s) => {
+    const mk = (k, auto) => {
+      const i = el('input', { id: `ov-${k}-${s.g.id}`, inputmode: 'numeric', placeholder: fmt(auto), 'aria-label': `Thuế ${k.toUpperCase()} ngành ${s.no}` });
+      if (Number.isFinite(s.o[k])) i.value = fmt(s.o[k]);
+      i.addEventListener('input', () => {
+        const raw = i.value.trim(); const key = periodKey();
+        S.overrides[key] = S.overrides[key] || {}; S.overrides[key][s.g.id] = S.overrides[key][s.g.id] || {};
+        if (raw === '') delete S.overrides[key][s.g.id][k]; else { const v = parseMoney(raw); S.overrides[key][s.g.id][k] = v; i.value = fmt(v); }
+        renderLedger(); changed();
+      });
+      return i;
+    };
+    return el('tr', {}, el('td', { text: `${s.no}. ${s.g.name}` }), el('td', { class: 'num', text: fmt(s.total) }), el('td', { class: 'num' }, mk('gtgt', s.autoG)), el('td', { class: 'num' }, mk('tncn', s.autoT)));
+  }));
+}
+function renderAll() { renderPeriod(); renderProfile(); renderGroups(); renderEntrySelect(); renderEntries(); renderLedger(); }
+
+/* ================= files ================= */
+function downloadFile(filename, data, type) {
+  const url = URL.createObjectURL(new Blob([data], { type }));
+  const a = el('a', { href: url, download: filename }); document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
+$('#btnExport').addEventListener('click', () => {
+  const msg = $('#exportMsg');
+  if (typeof XLSX === 'undefined') { msg.className = 'msg err'; msg.textContent = 'Thư viện Excel chưa tải xong. Kiểm tra mạng rồi bấm lại.'; return; }
+  const m = ledgerModel(); const p = S.profile;
+  const A = []; const merges = []; const numCells = [];
+  const push_ = (r) => { A.push(r); return A.length - 1; };
+  const mg = (r1, c1, r2, c2) => merges.push({ s: { r: r1, c: c1 }, e: { r: r2, c: c2 } });
+  push_(['HỘ, CÁ NHÂN KINH DOANH: ' + (p.ten || '......'), '', '', 'Mẫu số S2a-HKD']);
+  push_(['Địa chỉ: ' + (p.diaChi || '......'), '', '', '(Kèm theo Thông tư số 152/2025/TT-BTC']);
+  push_(['Mã số thuế: ' + (p.mst || '......'), '', '', 'ngày 31 tháng 12 năm 2025 của Bộ trưởng Bộ Tài chính)']);
+  for (let r = 0; r < 3; r++) mg(r, 0, r, 2);
+  push_([]);
+  let r = push_(['SỔ DOANH THU BÁN HÀNG HÓA, DỊCH VỤ']); mg(r, 0, r, 3);
+  r = push_(['Địa điểm kinh doanh: ' + (p.diaDiem || '......')]); mg(r, 0, r, 3);
+  r = push_(['Kỳ kê khai: ' + periodLabel()]); mg(r, 0, r, 3);
+  push_(['', '', '', 'Đơn vị tính: đồng']);
+  const h1 = push_(['Chứng từ', '', 'Diễn giải', 'Số tiền']); push_(['Số hiệu', 'Ngày, tháng', '', '']);
+  mg(h1, 0, h1, 1); mg(h1, 2, h1 + 1, 2); mg(h1, 3, h1 + 1, 3);
+  push_(['A', 'B', 'C', '1']);
+  const num = (row, v) => { const i = push_(row.concat([v])); numCells.push(i); return i; };
+  if (!m.sections.length) push_(['', '', '1. Ngành nghề...', '']);
+  for (const s of m.sections) {
+    push_(['', '', sectionTitle(s), '']);
+    for (const e of s.items) num([e.soHieu || '', dmy(e.ngay), e.dienGiai], e.soTien || 0);
+    num(['', '', `Tổng cộng (${s.no})`], s.total);
+    num(['', '', 'Thuế GTGT'], s.gtgt);
+    num(['', '', 'Thuế TNCN'], s.tncn);
+  }
+  num(['', '', 'Tổng số thuế GTGT phải nộp'], m.tG);
+  num(['', '', 'Tổng số thuế TNCN phải nộp'], m.tT);
+  push_([]);
+  push_(['', '', '', 'Ngày … tháng … năm …']);
+  push_(['', '', '', 'NGƯỜI ĐẠI DIỆN HỘ KINH DOANH/ CÁ NHÂN KINH DOANH']);
+  push_(['', '', '', '(Ký, ghi rõ họ tên, đóng dấu (nếu có))']);
+  push_([]); push_([]); push_([]);
+  push_(['', '', '', p.daiDien || '']);
+  const ws = XLSX.utils.aoa_to_sheet(A);
+  ws['!merges'] = merges;
+  ws['!cols'] = [{ wch: 14 }, { wch: 12 }, { wch: 58 }, { wch: 22 }];
+  for (const i of numCells) { const ref = XLSX.utils.encode_cell({ r: i, c: 3 }); if (ws[ref]) { ws[ref].t = 'n'; ws[ref].z = '#,##0'; } }
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'S2a-HKD');
+  const out = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+  const name = `So-doanh-thu-S2a-HKD_${periodFile()}.xlsx`;
+  downloadFile(name, out, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  msg.className = 'msg ok'; msg.textContent = `Đã tạo ${name}.`;
+});
+$('#btnBackup').addEventListener('click', () => {
+  const d = new Date();
+  downloadFile(`so-s2a-sao-luu_${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}.json`, JSON.stringify(payload(), null, 2), 'application/json');
+  $('#backupMsg').className = 'msg ok'; $('#backupMsg').textContent = 'Đã tải bản sao lưu.';
+});
+$('#fileRestore').addEventListener('change', async (ev) => {
+  const f = ev.target.files && ev.target.files[0]; const msg = $('#backupMsg'); if (!f) return;
+  try {
+    const raw = JSON.parse(await f.text());
+    if (raw.app !== 's2a-hkd' || !Array.isArray(raw.entries)) throw new Error('bad');
+    const d = normalize(raw);
+    S = mergeData(normalize(S), { ...d, profile: { ...d.profile } });
+    // file being imported wins over current data for the same ids
+    const em = new Map(S.entries.map((e) => [e.id, e])); for (const e of d.entries) em.set(e.id, e); S.entries = [...em.values()];
+    changed(1500); groupsSig = ''; renderAll();
+    msg.className = 'msg ok'; msg.textContent = `Đã nhập ${d.entries.length} dòng.`;
+  } catch (e) { msg.className = 'msg err'; msg.textContent = 'File này không phải bản sao lưu của sổ S2a. Hãy chọn file .json đã tải từ trang này.'; }
+  ev.target.value = '';
+});
+
+/* ================= boot ================= */
+S = normalize(lsGet(CACHE_KEY));
+renderGh();
+resetForm(false);
+renderAll();
+if (connected()) syncFromRemote(false).catch((e) => setStatus(e.message, 'err'));
+else setStatus('Chưa kết nối GitHub · dữ liệu đang lưu trên trình duyệt này', 'warn');
+})();
+</script>
+</body>
+</html>
